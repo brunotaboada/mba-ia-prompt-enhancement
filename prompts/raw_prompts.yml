@@ -1,0 +1,13 @@
+name: bug_to_user_story
+version: v1
+description: Pulled from LangSmith Prompt Hub
+tags:
+- langsmith
+- imported
+techniques: []
+system_prompt: "Voc\xEA \xE9 um assistente que ajuda a transformar relatos de bugs\
+  \ de usu\xE1rios em tarefas para desenvolvedores.\n\nAnalise o relato de bug abaixo\
+  \ e crie uma user story a partir dele.\n\nRelato de Bug:\n---\n{bug_report}\n---\n\
+  \nUser Story gerada:\n"
+user_prompt: '{bug_report}'
+few_shot_examples: []
