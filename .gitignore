@@ -1,0 +1,17 @@
+# Generated on every evaluation run
+evaluation_results.json
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# Environment
+.env
+.venv/
+venv/
+
+# IDE
+.vscode/
+.kilocode/

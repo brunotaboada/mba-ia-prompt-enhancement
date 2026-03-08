@@ -1,10 +1,13 @@
 import os
 
-from langchain import hub
+import langchainhub
 from langchain_core.prompts import ChatPromptTemplate
 from langsmith.utils import LangSmithNotFoundError
 from requests.exceptions import HTTPError
 from utils import load_environment, save_yaml, stringify_prompt_from_hub_object
+
+# Create a client instance
+hub_client = langchainhub.Client()
 
 
 def _push_minimal_v1_to_langsmith(target_repo: str) -> None:
@@ -28,7 +31,7 @@ def _push_minimal_v1_to_langsmith(target_repo: str) -> None:
     prompt_template = ChatPromptTemplate.from_messages(messages)
     
     print(f"  → Pushing minimal v1 to {target_repo}...")
-    hub.push(target_repo, object=prompt_template, new_repo_is_public=True)
+    langchainhub.Client().push(target_repo, object=prompt_template, new_repo_is_public=True)
     print(f"  ✓ Pushed successfully")
 
 
@@ -40,7 +43,7 @@ def main() -> None:
     
     try:
         # Strategy 1: Try to pull from LangSmith
-        prompt_object = hub.pull(source_prompt)
+        prompt_object = hub_client.pull(source_prompt)
         normalized = stringify_prompt_from_hub_object(prompt_object)
         print("✓ Successfully pulled from LangSmith")
         
@@ -49,7 +52,7 @@ def main() -> None:
         if "404" in str(e) or "not found" in str(e).lower():
             print(f"⚠️  Prompt not found in LangSmith")
             _push_minimal_v1_to_langsmith(source_prompt)
-            prompt_object = hub.pull(source_prompt)
+            prompt_object = hub_client.pull(source_prompt)
             normalized = stringify_prompt_from_hub_object(prompt_object)
             print("✓ Pushed and pulled minimal v1")
         else:

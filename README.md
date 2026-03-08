@@ -1,4 +1,3 @@
-# Hi
 # Prompt Engineering Challenge - LangChain + LangSmith
 
 ## Overview
@@ -16,9 +15,7 @@ desafio-prompt-engineer/
 ├── requirements.txt
 ├── README.md
 ├── prompts/
-│   ├── bug_to_user_story_v1.yml
 │   ├── bug_to_user_story_v2.yml
-│   └── raw_prompts.yml
 ├── src/
 │   ├── pull_prompts.py
 │   ├── push_prompts.py
@@ -49,7 +46,7 @@ cp .env.example .env
 
 Then fill `.env` values.
 
-## Model Resolution Strategy (Fixed Sequence)
+## Model Resolution Strategy
 `src/utils.py` resolves model clients in this strict order:
 1. Ollama (`OLLAMA_BASE_URL` + `OLLAMA_MODEL`)
 2. OpenAI (`OPENAI_API_KEY`, `OPENAI_MODEL` / `OPENAI_EVAL_MODEL`)
@@ -69,6 +66,8 @@ If LLM judge output is invalid JSON, evaluation safely falls back to heuristic s
 
 ## How to Execute
 
+Run the commands below in this exact order.
+
 ### 1. Pull baseline prompt (v1) from LangSmith
 ```bash
 python src/pull_prompts.py
@@ -79,45 +78,37 @@ This creates:
 - `prompts/raw_prompts.yml`
 
 ### 2. Evaluate baseline v1 (expected to FAIL)
-Run evaluation explicitly with v1 to show negative baseline results:
-
 ```bash
-PROMPT_FILE=prompts/bug_to_user_story_v1.yml python src/evaluate.py
+EVAL_SAMPLE_SIZE=20 PROMPT_FILE=prompts/bug_to_user_story_v1.yml python src/evaluate.py
 ```
 
-Expected outcome:
-- Low scores (below `0.9`)
-- Status: `FAILED`
-
 ### 3. Use the enhanced v2 prompt
-The optimized prompt is already in:
+The optimized prompt file is:
 - `prompts/bug_to_user_story_v2.yml`
 
-If needed, iterate by editing this file and re-running steps 4 to 6.
+If needed, edit this file before the next steps.
 
 ### 4. Run validation tests for v2
 ```bash
 pytest tests/test_prompts.py
 ```
 
-Expected outcome:
-- `6 passed`
-
 ### 5. Push optimized prompt (v2) to LangSmith
 ```bash
 python src/push_prompts.py
 ```
 
-### 6. Evaluate optimized v2 (expected to PASS)
-Run evaluation explicitly with v2:
+If nothing changed since the last push, LangSmith may return `409 Nothing to commit`.
 
+### 6. Evaluate optimized v2 (expected to PASS)
 ```bash
-PROMPT_FILE=prompts/bug_to_user_story_v2.yml python src/evaluate.py
+EVAL_SAMPLE_SIZE=20 PROMPT_FILE=prompts/bug_to_user_story_v2.yml python src/evaluate.py
 ```
 
-Expected outcome:
-- All four metrics >= `0.9`
-- Status: `APPROVED`
+### 7. Open comparison dashboard
+Use the direct compare link after both runs complete:
+
+https://smith.langchain.com/o/7caf0644-4f2f-4c7f-b47e-3f0e95a191fc/datasets/4f0193c5-fa78-44c3-b7f2-bfbacc48dcf3/compare?selectedSessions=3c1c671c-4778-4da9-b6ab-bed0cff746f1%2C3bec634b-c764-459b-90c8-00d8cf8cb2a6&source=3c1c671c-4778-4da9-b6ab-bed0cff746f1
 
 ## Applied Techniques (Phase 2)
 The optimized prompt (`prompts/bug_to_user_story_v2.yml`) applies these advanced techniques:
@@ -139,16 +130,66 @@ The optimized prompt (`prompts/bug_to_user_story_v2.yml`) applies these advanced
   - produce measurable acceptance criteria
 
 ## Final Results
-Detailed results and evidence are documented in:
+Latest evaluation was executed with 20 samples (`EVAL_SAMPLE_SIZE=20`) for both v1 and v2.
 
-- `RESULTS.md`
+### Evaluation Summary (Heuristic Mode - 20 samples)
 
-This includes:
-- 20-sample evaluation evidence (`EVAL_SAMPLE_SIZE=20`) for v1 and v2
-- Standard 15-sample comparison
-- LangSmith links
-- Reproduction commands
-- Submission checklist items for screenshots/traces
+| Metric                     | v1 (Baseline) | v2 (Optimized) | Improvement |
+|----------------------------|----------------|----------------|-------------|
+| Tone Score                 | 0.7550         | 0.9125         | +20.9%      |
+| Acceptance Criteria Score  | 0.3100         | 0.9133         | +194.6%     |
+| User Story Format Score    | 0.1000         | 1.0000         | +900.0%     |
+| Completeness Score         | 0.5250         | 1.0000         | +90.5%      |
+| **Average Score**          | **0.4225**     | **0.9565**     | **+126.4%** |
+
+### Status
+- v1: FAILED
+- v2: APPROVED
+
+## LangSmith Dashboard
+- **Source prompt (v1)**: `leonanluppi/bug_to_user_story_v1`
+- **Published prompt (v2)**: `initialhandle/bug_to_user_story_v2`
+- **Public prompt URL**: https://smith.langchain.com/hub/initialhandle/bug_to_user_story_v2
+- **Latest commit**: https://smith.langchain.com/hub/initialhandle/bug_to_user_story_v2/ff270305
+- **Public evaluation dashboard (20 samples)**: https://smith.langchain.com/o/7caf0644-4f2f-4c7f-b47e-3f0e95a191fc/datasets/4f0193c5-fa78-44c3-b7f2-bfbacc48dcf3
+- **Direct v1 vs v2 compare (20 samples)**: https://smith.langchain.com/o/7caf0644-4f2f-4c7f-b47e-3f0e95a191fc/datasets/4f0193c5-fa78-44c3-b7f2-bfbacc48dcf3/compare?selectedSessions=3c1c671c-4778-4da9-b6ab-bed0cff746f1%2C3bec634b-c764-459b-90c8-00d8cf8cb2a6&source=3c1c671c-4778-4da9-b6ab-bed0cff746f1
+- **Evaluation Dataset**: `bug_to_user_story_eval` (created automatically during evaluation)
+
+## Evaluation Screenshots
+![Compare 1](compare1.png)
+![Compare 2](compare2.png)
+
+- v1 low-score evaluation (expected to FAIL)
+- v2 approved evaluation (all metrics >= 0.9)
+- Traces for at least 3 examples
+
+## Comparative Results: v1 vs v2 (20 samples)
+
+### How Results Were Generated
+
+```bash
+# Run v1 evaluation with 20 samples
+EVAL_SAMPLE_SIZE=20 PROMPT_FILE=prompts/bug_to_user_story_v1.yml python src/evaluate.py
+
+# Run v2 evaluation with 20 samples
+EVAL_SAMPLE_SIZE=20 PROMPT_FILE=prompts/bug_to_user_story_v2.yml python src/evaluate.py
+```
+
+### Key Improvements from v1 to v2
+
+1. **Tone Score (+20.9%)**: clearer and more consistent wording with v2 constraints.
+2. **Acceptance Criteria Score (+194.6%)**: strong Given/When/Then coverage in v2.
+3. **User Story Format Score (+900.0%)**: strict structure enforcement in v2.
+4. **Completeness Score (+90.5%)**: v2 consistently includes complete sections and edge cases.
+
+### Techniques Applied in v2
+
+- **Role Prompting**: Senior Product Manager persona for consistent quality
+- **Few-shot Learning**: Two complete examples (password reset, mobile Safari checkout)
+- **Skeleton of Thought**: Step-by-step reasoning structure
+- **Output Validation**: Strict format enforcement
+- **Constraint Satisfaction**: All requirements must be met
+- **One-liner Comments**: Each technique identified in prompt file
 
 ## Spec Compliance Notes
 - Required folders/files are present according to the challenge structure.
@@ -156,8 +197,8 @@ This includes:
   - `prompts/bug_to_user_story_v1.yml`
   - `prompts/raw_prompts.yml`
 - Both command names are supported:
-  - `python src/pull_prompts.py` and `python src/pull_prompt.py`
-  - `python src/push_prompts.py` and `python src/push_prompt.py`
+  - `python src/pull_prompts.py` and `python src/pull_prompts.py`
+  - `python src/push_prompts.py` and `python src/push_prompts.py`
 - Required pytest validations are implemented in `tests/test_prompts.py`.
 
 ## Notes

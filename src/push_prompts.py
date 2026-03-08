@@ -1,8 +1,8 @@
 import os
 from typing import List, Tuple
 
-from langchain import hub
 from langchain_core.prompts import ChatPromptTemplate
+from langsmith import Client
 from requests.exceptions import HTTPError
 
 from utils import load_environment, load_yaml, normalize_prompt_payload
@@ -19,6 +19,9 @@ def _build_push_payload(prompt_data: dict) -> ChatPromptTemplate:
 def main() -> None:
     load_environment()
 
+    # Create a client instance after environment is loaded
+    ls_client = Client()
+
     target_repo = os.getenv("LANGSMITH_PROMPT_TARGET", "{your_username}/bug_to_user_story_v2")
     public_repo = os.getenv("LANGSMITH_PROMPT_PUBLIC", "true").strip().lower() == "true"
 
@@ -27,15 +30,15 @@ def main() -> None:
     prompt_template = _build_push_payload(prompt_data)
 
     try:
-        commit_hash = hub.push(
+        commit_hash = ls_client.push_prompt(
             target_repo,
             object=prompt_template,
-            new_repo_is_public=public_repo,
-            new_repo_description=prompt_data.get("description", ""),
+            is_public=public_repo,
+            description=prompt_data.get("description", ""),
             tags=prompt_data.get("tags", []),
         )
         print(f"Prompt pushed to {target_repo}")
-        print(f"Commit hash: {commit_hash}")
+        print(f"Prompt URL: {commit_hash}")
     except HTTPError as exc:
         if "409" in str(exc) and "Nothing to commit" in str(exc):
             print(f"Prompt already up-to-date at {target_repo} (no changes detected)")
